@@ -1,0 +1,102 @@
+
+CREATE DATABASE library_lab;
+USE library_lab;
+
+
+    MemberID INT,
+    FullName VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) NOT NULL,
+    Age INT,
+    Gender ENUM('MALE','FEMALE','OTHER'),
+
+    CONSTRAINT PK_MEMBER PRIMARY KEY (MemberID),
+    CONSTRAINT UQ_MEMBER_EMAIL UNIQUE (Email),
+    CONSTRAINT CHK_MEMBER_AGE CHECK (Age >= 12)
+);
+
+
+CREATE TABLE BOOK (
+    BookID INT,
+    Title VARCHAR(150) NOT NULL,
+    ISBN VARCHAR(20) NOT NULL,
+    Price DECIMAL(6,2),
+    Status ENUM('AVAILABLE','BORROWED') DEFAULT 'AVAILABLE',
+
+    CONSTRAINT PK_BOOK PRIMARY KEY (BookID),
+    CONSTRAINT UQ_BOOK_ISBN UNIQUE (ISBN),
+    CONSTRAINT CHK_BOOK_PRICE CHECK (Price >= 0)
+);
+
+CREATE TABLE LOAN (
+    LoanID INT,
+    MemberID INT,
+    BookID INT,
+
+    CONSTRAINT PK_LOAN PRIMARY KEY (LoanID),
+
+    CONSTRAINT FK_LOAN_MEMBER
+        FOREIGN KEY (MemberID)
+        REFERENCES MEMBER(MemberID),
+
+    CONSTRAINT FK_LOAN_BOOK
+        FOREIGN KEY (BookID)
+        REFERENCES BOOK(BookID)
+);
+
+
+INSERT INTO MEMBER VALUES
+(1,'Rahim Uddin','rahim@gmail.com',20,'MALE'),
+(2,'Karim Ahmed','karim@gmail.com',22,'MALE'),
+(3,'Ayesha Rahman','ayesha@gmail.com',19,'FEMALE'),
+(4,'Nusrat Jahan','nusrat@gmail.com',25,'FEMALE'),
+(5,'Tanvir Hasan','tanvir@gmail.com',18,'MALE');
+
+INSERT INTO BOOK VALUES
+(101,'Database Systems','ISBN001',500,'AVAILABLE'),
+(102,'Algorithms','ISBN002',650,'AVAILABLE'),
+(103,'Operating System','ISBN003',700,'AVAILABLE'),
+(104,'Computer Networks','ISBN004',550,'AVAILABLE'),
+(105,'Artificial Intelligence','ISBN005',800,'AVAILABLE');
+
+
+(1,1,101),
+(2,2,102),
+(3,3,103),
+(4,4,104),
+(5,5,105),
+(6,1,103);
+
+
+INSERT INTO MEMBER VALUES
+(6,'Test User','rahim@gmail.com',20,'MALE');
+
+INSERT INTO LOAN VALUES
+(7,99,101);
+
+
+INSERT INTO BOOK VALUES
+(106,'Invalid Book','ISBN006',-50,'AVAILABLE');
+
+
+ALTER TABLE MEMBER
+ADD Phone VARCHAR(15) NOT NULL DEFAULT 'N/A';
+
+
+ALTER TABLE BOOK
+MODIFY Price DECIMAL(8,2);
+
+
+ALTER TABLE BOOK
+CHANGE Status Availability ENUM('AVAILABLE','BORROWED') DEFAULT 'AVAILABLE';
+
+
+ALTER TABLE MEMBER
+DROP COLUMN Gender;
+
+
+ALTER TABLE MEMBER
+ADD CONSTRAINT CHK_MEMBER_PHONE
+CHECK (Phone <> '');
+
+
+RENAME TABLE LOAN TO BORROW;
