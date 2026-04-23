@@ -1,0 +1,107 @@
+-- ================================
+-- DATABASE
+-- ================================
+DROP DATABASE IF EXISTS faculty_trigger_lab;
+CREATE DATABASE faculty_trigger_lab;
+USE faculty_trigger_lab;
+
+-- ================================
+-- EMPLOYEE TABLE
+-- ================================
+CREATE TABLE EMPLOYEE (
+    EmpID INT PRIMARY KEY,
+    EmpName VARCHAR(100) NOT NULL,
+    BasicSalary DECIMAL(10,2) NOT NULL,
+    StartDate DATE NOT NULL,
+    NoOfPub INT NOT NULL CHECK(NoOfPub >= 0),
+    IncrementRate DECIMAL(5,2) DEFAULT 0,
+    UpdatedSalary DECIMAL(10,2)
+);
+
+-- ================================
+-- SALARY LOG TABLE
+-- ================================
+CREATE TABLE SALARY_LOG (
+    LogID INT AUTO_INCREMENT PRIMARY KEY,
+    EmpID INT,
+    OldSalary DECIMAL(10,2),
+    NewSalary DECIMAL(10,2),
+    ChangedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Note VARCHAR(100),
+    FOREIGN KEY (EmpID) REFERENCES EMPLOYEE(EmpID)
+);
+
+-- ================================
+-- INSERT DATA
+-- ================================
+INSERT INTO EMPLOYEE VALUES
+(1, 'Rahim', 30000, '2022-01-01', 5, 0, 30000),
+(2, 'Karim', 25000, '2023-01-01', 3, 0, 25000),
+(3, 'Jamal', 20000, '2024-06-01', 1, 0, 20000),
+(4, 'Hasan', 18000, '2025-01-01', 0, 0, 18000),
+(5, 'Sohan', 40000, '2020-05-01', 6, 0, 40000),
+(6, 'Rifat', 27000, '2022-03-01', 2, 0, 27000),
+(7, 'Tanvir', 22000, '2021-07-01', 1, 0, 22000),
+(8, 'Nayeem', 26000, '2025-02-01', 4, 0, 26000);
+
+-- ================================
+-- TRIGGER: SALARY UPDATE
+-- ================================
+DELIMITER $$
+
+CREATE TRIGGER trg_salary_update
+BEFORE UPDATE ON EMPLOYEE
+FOR EACH ROW
+BEGIN
+    DECLARE years INT;
+
+    SET years = TIMESTAMPDIFF(YEAR, NEW.StartDate, CURDATE());
+
+    IF years > 1 THEN
+        IF NEW.NoOfPub > 4 THEN
+            SET NEW.IncrementRate = 20;
+        ELSEIF NEW.NoOfPub IN (2,3) THEN
+            SET NEW.IncrementRate = 10;
+        ELSEIF NEW.NoOfPub = 1 THEN
+            SET NEW.IncrementRate = 5;
+        ELSE
+            SET NEW.IncrementRate = 0;
+        END IF;
+    ELSE
+        SET NEW.IncrementRate = 0;
+    END IF;
+
+    SET NEW.UpdatedSalary = NEW.BasicSalary + 
+                           (NEW.BasicSalary * NEW.IncrementRate / 100);
+END$$
+
+DELIMITER ;
+
+-- ================================
+-- TRIGGER: SALARY LOG
+-- ================================
+DELIMITER $$
+
+CREATE TRIGGER trg_salary_log
+AFTER UPDATE ON EMPLOYEE
+FOR EACH ROW
+BEGIN
+    IF OLD.UpdatedSalary <> NEW.UpdatedSalary THEN
+        INSERT INTO SALARY_LOG(EmpID, OldSalary, NewSalary, Note)
+        VALUES (NEW.EmpID, OLD.UpdatedSalary, NEW.UpdatedSalary, 'Salary Updated');
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- ================================
+-- TEST UPDATE (ALL CASE COVER)
+-- ================================
+UPDATE EMPLOYEE SET NoOfPub = 5 WHERE EmpID = 1; -- 20%
+UPDATE EMPLOYEE SET NoOfPub = 3 WHERE EmpID = 2; -- 10%
+UPDATE EMPLOYEE SET NoOfPub = 1 WHERE EmpID = 3; -- 5%
+UPDATE EMPLOYEE SET NoOfPub = 0 WHERE EmpID = 4; -- 0%
+
+-- ================================
+-- FINAL OUTPUT
+-- ================================
